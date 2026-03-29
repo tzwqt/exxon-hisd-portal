@@ -150,13 +150,7 @@ export default function ExxonHISDSolutionSite() {
               <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
                 Material Documentation Accountability Portal
               </h1>
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
-              >
-                {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                {darkMode ? "Light Mode" : "Dark Mode"}
-              </button>
+              <button></button>
             </div>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300 md:text-base">
               A professional web-based concept demonstrating how worker sign-in, QR scanning,
