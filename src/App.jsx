@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Upload,
   Camera,
+  Search,
   Users,
   Activity,
 } from "lucide-react";
@@ -35,6 +36,12 @@ export default function ExxonHISDSolutionSite() {
     { name: "Inspection Report.pdf", status: "Pending Review", size: "980 KB" },
   ]);
   const [dragOver, setDragOver] = useState(false);
+  const [materialSearch, setMaterialSearch] = useState("");
+
+  const materialOptions = ["XM-PIPE-48291", "XM-VALVE-10532", "XM-FLANGE-21770", "XM-PIPE-88440", "XM-ELBOW-33021", "XM-FITTING-09183"];
+  const filteredMaterials = materialSearch.length > 0
+    ? materialOptions.filter((id) => id.toLowerCase().includes(materialSearch.toLowerCase()))
+    : [];
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
@@ -393,13 +400,41 @@ export default function ExxonHISDSolutionSite() {
               </div>
 
               <div className="mt-5 space-y-4">
-                <div>
-                  <label className={labelCls}>Material ID</label>
-                  <input
-                    value={materialId}
-                    onChange={(e) => setMaterialId(e.target.value)}
-                    className={inputCls}
-                  />
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <label className={labelCls}>Material ID</label>
+                    <input
+                      value={materialId}
+                      onChange={(e) => setMaterialId(e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+                  <div className="relative">
+                    <label className={labelCls}>Search Materials</label>
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        value={materialSearch}
+                        onChange={(e) => setMaterialSearch(e.target.value)}
+                        placeholder="Search by ID…"
+                        className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-8 pr-3 text-sm outline-none transition focus:border-[#d81e05] dark:border-[#1e2d3d] dark:bg-[#0c1520] dark:text-slate-100 dark:placeholder:text-slate-600"
+                      />
+                    </div>
+                    {filteredMaterials.length > 0 && (
+                      <ul className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md dark:border-[#1e2d3d] dark:bg-[#111827]">
+                        {filteredMaterials.map((id) => (
+                          <li key={id}>
+                            <button
+                              onClick={() => { setMaterialId(id); setMaterialSearch(""); }}
+                              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-[#0c1520]"
+                            >
+                              <span className="font-mono text-xs text-slate-500 dark:text-slate-400">{id}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
                 <div className="grid gap-3 md:grid-cols-3">
                   <button
