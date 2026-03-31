@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   ChevronRight,
+  Upload,
   Camera,
   Users,
   Activity,
@@ -33,6 +34,7 @@ export default function ExxonHISDSolutionSite() {
     { name: "Shipping Record.pdf", status: "Attached", size: "1.1 MB" },
     { name: "Inspection Report.pdf", status: "Pending Review", size: "980 KB" },
   ]);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
@@ -73,6 +75,37 @@ export default function ExxonHISDSolutionSite() {
       {label}
     </button>
   );
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (!files.length) return;
+    const newUploads = files.map((file) => ({
+      name: file.name,
+      status: "Attached",
+      size: file.size > 1_000_000
+        ? `${(file.size / 1_000_000).toFixed(1)} MB`
+        : `${Math.round(file.size / 1_000)} KB`,
+    }));
+    setUploads((prev) => [...prev, ...newUploads]);
+    setDocsUploaded(true);
+  };
+
+  const handleFileInput = (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    const newUploads = files.map((file) => ({
+      name: file.name,
+      status: "Attached",
+      size: file.size > 1_000_000
+        ? `${(file.size / 1_000_000).toFixed(1)} MB`
+        : `${Math.round(file.size / 1_000)} KB`,
+    }));
+    setUploads((prev) => [...prev, ...newUploads]);
+    setDocsUploaded(true);
+    e.target.value = "";
+  };
 
   const addMockUpload = () => {
     const pool = [
@@ -390,7 +423,31 @@ export default function ExxonHISDSolutionSite() {
                 </div>
               </div>
 
-              <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 dark:border-[#1e2d3d]">
+              <label
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                className={`mt-5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors ${
+                  dragOver
+                    ? "border-[#d81e05] bg-[#d81e05]/5"
+                    : "border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-[#1e2d3d] dark:bg-[#0c1520] dark:hover:border-slate-600"
+                }`}
+              >
+                <input type="file" multiple className="sr-only" onChange={handleFileInput} />
+                <div className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${dragOver ? "bg-[#d81e05]/10 text-[#d81e05]" : "bg-slate-200 text-slate-500 dark:bg-[#1e2d3d] dark:text-slate-400"}`}>
+                  <Upload className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    {dragOver ? "Drop files to attach" : "Drag files here"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    or <span className="text-[#d81e05]">browse</span> · PDF, DOC, images accepted
+                  </p>
+                </div>
+              </label>
+
+              <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 dark:border-[#1e2d3d]">
                 <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-[#1e2d3d]">
                   <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Required Documentation</p>
                   <p className="text-xs text-slate-400">{uploads.length} files linked</p>
