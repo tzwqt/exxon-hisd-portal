@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ShieldCheck,
   QrCode,
@@ -37,6 +37,20 @@ export default function ExxonHISDSolutionSite() {
   ]);
   const [dragOver, setDragOver] = useState(false);
   const [materialSearch, setMaterialSearch] = useState("");
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
+
+  // Callback ref: fires when the <video> element mounts.
+  // iOS Safari requires explicit .play() after srcObject is set.
+  const videoCallbackRef = useCallback((node) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      node.srcObject = streamRef.current;
+      node.play().catch(() => {});
+    }
+  }, []);
 
   const materialOptions = ["XM-PIPE-48291", "XM-VALVE-10532", "XM-FLANGE-21770", "XM-PIPE-88440", "XM-ELBOW-33021", "XM-FITTING-09183"];
   const filteredMaterials = materialSearch.length > 0
@@ -123,6 +137,45 @@ export default function ExxonHISDSolutionSite() {
     const next = pool[uploads.length % pool.length];
     setUploads((prev) => [...prev, next]);
     setDocsUploaded(true);
+  };
+
+  const openCamera = async () => {
+    setCameraError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setShowCamera(true);
+      setCameraError("Camera not available. Make sure the site is opened over HTTPS.");
+      return;
+    }
+    setShowCamera(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+      });
+      streamRef.current = stream;
+      // If the video element already mounted (permission prompt was slow),
+      // attach now; otherwise videoCallbackRef handles it on mount.
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {});
+      }
+    } catch {
+      setCameraError("Camera access denied. Please allow camera permission and try again.");
+    }
+  };
+
+  const closeCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+    setCameraError(null);
+  };
+
+  const captureQR = () => {
+    setQrScanned(true);
+    setScanMode("QR Captured");
+    closeCamera();
   };
 
   const inputCls =
@@ -393,10 +446,13 @@ export default function ExxonHISDSolutionSite() {
                     Simulates the workflow a worker would follow on a company-managed device.
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-500 dark:border-[#1e2d3d] dark:bg-[#0c1520] dark:text-slate-400">
+                <button
+                  onClick={openCamera}
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-500 transition hover:border-[#d81e05] hover:text-[#d81e05] dark:border-[#1e2d3d] dark:bg-[#0c1520] dark:text-slate-400 dark:hover:border-[#d81e05] dark:hover:text-[#d81e05]"
+                >
                   <Camera className="h-3.5 w-3.5" />
                   {scanMode}
-                </div>
+                </button>
               </div>
 
               <div className="mt-5 space-y-4">
@@ -681,6 +737,73 @@ export default function ExxonHISDSolutionSite() {
           <p>ExxonMobil × HISD internship concept prototype · Vite, React, Tailwind CSS</p>
         </div>
       </footer>
+
+      {/* ── Camera Modal ── */}
+      {showCamera && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-[#1e2d3d] dark:bg-[#111827]">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-[#1e2d3d]">
+              <div className="flex items-center gap-2">
+                <Camera className="h-4 w-4 text-[#d81e05]" />
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Scan QR Code</p>
+              </div>
+              <button
+                onClick={closeCamera}
+                className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-[#1e2d3d] dark:hover:text-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-5">
+              {cameraError ? (
+                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                  <AlertTriangle className="h-8 w-8 text-amber-500" />
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{cameraError}</p>
+                  <button
+                    onClick={closeCamera}
+                    className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium transition hover:bg-slate-50 dark:border-[#1e2d3d] dark:hover:bg-[#0c1520]"
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="relative overflow-hidden rounded-xl bg-black">
+                    <video
+                      ref={videoCallbackRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="h-56 w-full object-cover"
+                    />
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <div className="h-36 w-36 rounded-xl border-2 border-[#d81e05] opacity-80" />
+                    </div>
+                  </div>
+                  <p className="mt-3 text-center text-xs text-slate-400">
+                    Align the QR code within the frame, then tap Capture.
+                  </p>
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={closeCamera}
+                      className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-medium transition hover:bg-slate-50 dark:border-[#1e2d3d] dark:hover:bg-[#0c1520]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={captureQR}
+                      className="flex-1 rounded-lg bg-[#d81e05] py-2.5 text-sm font-medium text-white transition hover:bg-[#bf1a04]"
+                    >
+                      Capture QR
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
